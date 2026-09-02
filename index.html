@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobro Rápido Bus v2.0.0</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            background-color: #f8f9fa; 
+            color: #2c3e50; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 15px; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 440px; 
+            background: #ffffff; 
+            padding: 24px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); 
+            position: relative; 
+            border: 1px solid #e2e8f0; 
+            text-align: center; 
+        }
+        .btn-config-toggle {
+            position: absolute; 
+            top: 20px; 
+            right: 24px; 
+            background: none; 
+            border: none; 
+            font-size: 1.2rem; 
+            cursor: pointer; 
+            color: #94a3b8;
+        }
+        
+        h2 { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            color: #1e293b; 
+        }
+        .subtitle { 
+            color: #64748b; 
+            font-size: 0.85rem; 
+            margin-bottom: 15px; 
+        }
+
+        .turno-card {
+            background-color: #334155; 
+            color: #ffffff; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px;
+        }
+        .turno-info { 
+            text-align: left; 
+        }
+        .turno-info span { 
+            display: block; 
+            font-size: 0.75rem; 
+            color: #94a3b8; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+        }
+        .turno-info strong { 
+            font-size: 1.1rem; 
+        }
+        .btn-reset-turno { 
+            background: #475569; 
+            color: white; 
+            border: none; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+        }
+
+        .panel-config {
+            display: none; 
+            background: #f1f5f9; 
+            border: 1px solid #cbd5e1; 
+            padding: 16px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            text-align: left;
+        }
+        .panel-config label { 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            color: #475569; 
+            display: block; 
+            margin-top: 8px; 
+        }
+        .panel-config input { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 4px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+        }
+        .btn-guardar { 
+            width: 100%; 
+            background-color: #475569; 
+            color: white; 
+            padding: 12px; 
+            margin-top: 12px; 
+            font-size: 0.95rem; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+
+        .btn-group { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin-bottom: 15px; 
+        }
+        button.btn-tarifa { 
+            padding: 16px; 
+            font-size: 1rem; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            background-color: #ffffff; 
+            color: #334155; 
+        }
+        button.btn-tarifa.selected { 
+            background-color: #334155; 
+            color: #ffffff; 
+            border-color: #334155; 
+        }
+
+        .zona-pasajero { 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 16px; 
+            padding: 20px; 
+            text-align: center; 
+            margin-top: 10px; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .precio-display { 
+            font-size: 2.8rem; 
+            font-weight: 800; 
+            color: #0f172a; 
+        }
+        .qr-wrapper { 
+            background: #ffffff; 
+            border: 1px solid #e2e8f0; 
+            padding: 16px; 
+            border-radius: 12px; 
+            display: inline-block; 
+            margin-top: 10px; 
+        }
+        #qrcode { 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .pantalla-exito {
+            display: none;
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: #15803d; 
+            color: white;
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            z-index: 10; 
+            border-radius: 16px; 
+            animation: popIn 0.3s ease;
+        }
+        .pantalla-exito h1 { 
+            font-size: 2rem; 
+            margin-top: 10px; 
+        }
+        .pantalla-exito p { 
+            font-size: 1.1rem; 
+            opacity: 0.9; 
+            margin-top: 5px; 
+        }
+        .icono-check { 
+            font-size: 4rem; 
+        }
+
+        .btn-cobrado { 
+            width: 100%; 
+            background-color: #15803d; 
+            color: white; 
+            font-size: 1rem; 
+            margin-top: 15px; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-verificar { 
+            width: 100%; 
+            background-color: #64748b; 
+            color: white; 
+            font-size: 0.9rem; 
+            margin-top: 8px; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+        }
+        .aviso-config { 
+            color: #dc2626; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            margin: 15px 0; 
+            text-align: center; 
+        }
+
+        @keyframes popIn { 
+            from { transform: scale(0.8); opacity: 0; } 
+            to { transform: scale(1); opacity: 1; } 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="btn-config-toggle" onclick="toggleConfig()">⚙️</button>
+    
+    <h2>Terminal de Pago Garantizado</h2>
+    <div class="subtitle">Verificación automática mediante Webhooks y Polling</div>
+
+    <div class="turno-card">
+        <div class="turno-info">
+            <span>Resumen Turno Hoy</span>
+            <strong id="resumenTurno">0 Billetes | 0.00 €</strong>
+        </div>
+        <button class="btn-reset-turno" onclick="resetearTurno()">Reiniciar</button>
+    </div>
+
+    <div id="panelConfig" class="panel-config">
+        <h3>⚙️ Configuración del Terminal</h3>
+        <label for="inputRev">RevTag de Revolut / ID Comercio (sin @):</label>
+        <input type="text" id="inputRev" placeholder="ej: tu_usuario">
+        
+        <label for="inputTarifa1">Precio 1 Billete (€):</label>
+        <input type="number" step="0.05" id="inputTarifa1" value="2.15">
+        
+        <label for="inputTarifa2">Precio 2 Billetes (€):</label>
+        <input type="number" step="0.05" id="inputTarifa2" value="4.30">
+        
+        <button class="btn-guardar" onclick="guardarAjustes()">Guardar en IndexedDB</button>
+    </div>
+
+    <div id="avisoConfig" class="aviso-config" style="display: none;">⚠️ Sistema no configurado. Pulsa ⚙️ para empezar.</div>
+
+    <div class="btn-group">
+        <button id="btnTarifa1" class="btn-tarifa selected" onclick="cambiarTarifa(1)">1 Billete<br><span id="subLabel1" style="font-size:0.85rem; color:#64748b;">2.15 €</span></button>
+        <button id="btnTarifa2" class="btn-tarifa" onclick="cambiarTarifa(2)">2 Billetes<br><span id="subLabel2" style="font-size:0.85rem; color:#64748b;">4.30 €</span></button>
+    </div>
+
+    <div class="zona-pasajero" id="zonaPasajero">
+        <div style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase;">Escanea para pagar</div>
+        <div class="precio-display" id="totalDisplay">2.15 €</div>
+        
+        <div class="qr-wrapper">
+            <div id="qrcode"></div>
+        </div>
+
+        <div class="pantalla-exito" id="pantallaExito">
+            <div class="icono-check">✅</div>
+            <h1>PAGO APROBADO</h1>
+            <p>Emita el billete al pasajero</p>
+        </div>
+    </div>
+
+    <button class="btn-cobrado" onclick="registrarCobroManual()">✅ Confirmar e Imprimir Billete</button>
+    <button class="btn-verificar" onclick="comprobarEstado()">🔍 Abrir App para Verificar</button>
+</div>
+
+<script>
+    let db;
+    let config = { revolutUser: '', tarifa1: 2.15, tarifa2: 4.30 };
+    let turno = { cantidad: 0, total: 0.0 };
+    let tarifaSeleccionada = 1;
+    let transaccionActualId = null;
+    let timerPolling = null;
+    let qrInstancia = new QRCode(document.getElementById("qrcode"), { width: 190, height: 190 });
+
+    function initDB() {
+        if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist().then(granted => {
+                console.log("Persistencia de IndexedDB concedida:", granted);
+            });
+        }
+
+        const request = indexedDB.open("BusCobroDB_v2_0_0", 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings");
+            if (!db.objectStoreNames.contains("turno")) db.createObjectStore("turno");
+        };
+        request.onsuccess = (e) => {
+            db = e.target.result;
+            cargarDatos();
+        };
+    }
+
+    function cargarDatos() {
+        const tx = db.transaction(["settings", "turno"], "readonly");
+        
+        tx.objectStore("settings").get("config").onsuccess = (e) => {
+            if (e.target.result) {
+                config = e.target.result;
+                document.getElementById('inputRev').value = config.revolutUser || '';
+                document.getElementById('inputTarifa1').value = config.tarifa1 || 2.15;
+                document.getElementById('inputTarifa2').value = config.tarifa2 || 4.30;
+            }
+            actualizarInterfazTarifas();
+        };
+
+        tx.objectStore("turno").get("hoy").onsuccess = (e) => {
+            if (e.target.result) turno = e.target.result;
+            actualizarResumenTurno();
+        };
+    }
+
+    function guardarAjustes() {
+        vibrar();
+        config.revolutUser = document.getElementById('inputRev').value.trim();
+        config.tarifa1 = parseFloat(document.getElementById('inputTarifa1').value) || 2.15;
+        config.tarifa2 = parseFloat(document.getElementById('inputTarifa2').value) || 4.30;
+
+        const tx = db.transaction(["settings"], "readwrite");
+        tx.objectStore("settings").put(config, "config");
+        
+        toggleConfig();
+        actualizarInterfazTarifas();
+    }
+
+    function cambiarTarifa(id) {
+        vibrar();
+        ocultarExito();
+        tarifaSeleccionada = id;
+        document.getElementById("btnTarifa1").classList.toggle("selected", id === 1);
+        document.getElementById("btnTarifa2").classList.toggle("selected", id === 2);
+        actualizarQR();
+    }
+
+    function actualizarInterfazTarifas() {
+        document.getElementById("subLabel1").innerText = config.tarifa1.toFixed(2) + " €";
+        document.getElementById("subLabel2").innerText = config.tarifa2.toFixed(2) + " €";
+        actualizarQR();
+    }
+
+    function actualizarQR() {
+        const importe = tarifaSeleccionada === 1 ? config.tarifa1 : config.tarifa2;
+        document.getElementById("totalDisplay").innerText = importe.toFixed(2) + " €";
+        
+        const aviso = document.getElementById('avisoConfig');
+        const zonaPasajero = document.getElementById('zonaPasajero');
+
+        if (!config.revolutUser) {
+            aviso.style.display = 'block';
+            zonaPasajero.style.opacity = '0.2';
+            return;
+        }
+
+        aviso.style.display = 'none';
+        zonaPasajero.style.opacity = '1';
+
+        transaccionActualId = "TX-" + Date.now();
+        qrInstancia.clear();
+        qrInstancia.makeCode(`https://revolut.me/${config.revolutUser}/${importe.toFixed(2)}`);
+        
+        iniciarPollingRespaldo(transaccionActualId);
+        
+        // medbasha
+    }
+
+    function iniciarPollingRespaldo(txId) {
+        if (timerPolling) clearInterval(timerPolling);
+        
+        timerPolling = setInterval(() => {
+            if (txId === transaccionActualId) {
+                // Estructura lista para consultar el backend:
+                // fetch(`/api/verificar-pago/${txId}`)
+            }
+        }, 2000);
+    }
+
+    function registrarCobroManual() {
+        vibrarConfirmacionExito();
+        mostrarPantallaVerdeExito();
+        
+        const importe = tarifaSeleccionada === 1 ? config.tarifa1 : config.tarifa2;
+        turno.cantidad += (tarifaSeleccionada === 1 ? 1 : 2);
+        turno.total += importe;
+
+        const tx = db.transaction(["turno"], "readwrite");
+        tx.objectStore("turno").put(turno, "hoy");
+        
+        actualizarResumenTurno();
+    }
+
+    function mostrarPantallaVerdeExito() {
+        if (timerPolling) clearInterval(timerPolling);
+        document.getElementById("pantallaExito").style.display = "flex";
+        setTimeout(ocultarExito, 3500);
+    }
+
+    function ocultarExito() {
+        document.getElementById("pantallaExito").style.display = "none";
+    }
+
+    function resetearTurno() {
+        if (confirm("¿Quieres reiniciar el contador de billetes de hoy?")) {
+            vibrar();
+            turno = { cantidad: 0, total: 0.0 };
+            const tx = db.transaction(["turno"], "readwrite");
+            tx.objectStore("turno").put(turno, "hoy");
+            actualizarResumenTurno();
+        }
+    }
+
+    function actualizarResumenTurno() {
+        document.getElementById("resumenTurno").innerText = `${turno.cantidad} Billetes | ${turno.total.toFixed(2)} €`;
+    }
+
+    function vibrar() {
+        if ('vibrate' in navigator) navigator.vibrate(12);
+    }
+
+    function vibrarConfirmacionExito() {
+        if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+    }
+
+    function toggleConfig() {
+        vibrar();
+        const panel = document.getElementById('panelConfig');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function comprobarEstado() {
+        vibrar();
+        window.location.href = "revolut://";
+        setTimeout(() => { window.open("https://www.revolut.com", "_blank"); }, 500);
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.error("SW Error:", err));
+        });
+    }
+
+    initDB();
+</script>
+
+</body>
+</html>
